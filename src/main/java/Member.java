@@ -9,7 +9,7 @@ public class Member {
     private final double reliability; // Scale between 0 and 1 of whether emails get delivered (0 = never, 1 = always)
     private final String condition; // for specifying varying behaviour of M2 and M3
 
-    // special Constructor
+    // Special constructor
     // Arguments: inputID = id, dom = dominance, res = responsiveness, rel = reliability
     public Member(String inputID, Integer dom, double res, double rel, String c) {
         this.id = inputID;
@@ -35,4 +35,5 @@ public class Member {
     public String getSpecial() {
         return this.condition;
     }
+
 }
