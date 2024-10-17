@@ -189,7 +189,6 @@ public class MemberManagement {
                 break;
             }
         }
-
         for (Member curr_member : memberList) {
             if (curr_member.getID() < 4) { // Members with ID from 0 to 4
                 if (proposers.get(0).sendPropose(proposalID, memberList.get(memberID), acceptors.get(curr_member.getID()))) { // If sendPrepare worked (NOTE: only uses first 2 acceptors)

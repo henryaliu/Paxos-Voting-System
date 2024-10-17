@@ -18,7 +18,7 @@ public class Member {
         this.condition = c;
     }
 
-    // Getters
+    // Getters/Setters
     public Integer getID() {
         return this.id;
     }

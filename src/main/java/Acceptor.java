@@ -9,6 +9,8 @@ public class Acceptor {
 
     private ServerSocket acceptorSocket; // Server socket where the proposers send Proposals to
     private Integer ID;
+    private ObjectOutputStream output;
+    private ObjectInputStream input;
 
     private Member currentMemberUsingThis;
     private Integer currentProposalID = null; // For storing the ID of the current Proposal that has been accepted
@@ -36,11 +38,13 @@ public class Acceptor {
 
     // Function to read in a Prepare re message from a specified Proposer, and send PROMISE if conditions are met
     // Else, it will send its own current Proposal ID
+    // connectedSocket which is used to communicate to and from
+    // memberToVoteFor: The member to be elected, this acceptor needs to accept that member
     // Condition to return PROMISE: If currentProposalID < latest sent Proposal ID
     public boolean receivePrepare(Proposer p, Socket connectedSocket, Member memberToVoteFor) {
         try {
-            ObjectOutputStream output = new ObjectOutputStream(connectedSocket.getOutputStream());
-            ObjectInputStream input = new ObjectInputStream(connectedSocket.getInputStream());
+            output = new ObjectOutputStream(connectedSocket.getOutputStream());
+            input = new ObjectInputStream(connectedSocket.getInputStream());
             String message = (String) input.readObject();
             String[] keywords = message.split(" ", 2); // Split the message into two keywords
             if (keywords[0].equals("PREPARE")) {
@@ -49,7 +53,7 @@ public class Acceptor {
                     output.writeObject("PROMISE" + " " + this.currentProposalID + " " + memberToVoteFor.getID());
                     output.flush();
                 } else { // Else, respond without "PROMISE", instead sending only the currentProposalID
-                    output.writeObject(this.currentProposalID);
+                    output.writeObject(this.currentProposalID + memberToVoteFor.getID());
                     output.flush();
                 }
             }
@@ -58,6 +62,26 @@ public class Acceptor {
             return false;
         }
         return true;
+    }
+
+    // Get the Propose message and send back Accepted message to Proposer
+    // Conditions: Check the currentProposalID, if it's not higher than
+    // p: Proposer who sent the Propose
+    // connectedSocket: Socket which is used to communicate to and from
+    public boolean receivePropose(Proposer p, Socket connectedSocket, Member memberToVoteFor) {
+        try {
+            String message = (String) input.readObject();
+            String[] keywords = message.split(" ", 3); // Split the message into two keywords
+            if (keywords[0].equals("PROPOSE")) {
+                
+            } else {
+                System.out.println("No Propose was received!");
+                return false;
+            }
+        } catch (IOException | ClassNotFoundException e) {
+            System.out.println(e.getMessage());
+            return false;
+        }
     }
 
 }

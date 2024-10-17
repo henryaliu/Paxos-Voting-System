@@ -21,6 +21,8 @@ public class Proposer {
     private Integer proposalID; // Non static for passing to specific Proposal
 
     private Member proposedPresident; // The "client" of this proposer. Who this proposer makes a proposal for
+    private Integer proposedPresidentID;
+
     private Integer chosenProposalID; // chosen ProposalID after sendPrepare() is called
     private Integer highestReceivedPropID; // Highest received proposalID from Acceptor (if no PROMISE)
 
@@ -84,11 +86,12 @@ public class Proposer {
             // We call Acceptor's receivePrepare here
             if (a.receivePrepare(this, tempSocket, this.proposedPresident)) { // If Acceptor's receivePrepare was successful
                 String message = (String) input.readObject();
-                String[] keywords = message.split(" ", 2);
+                String[] keywords = message.split(" ", 3);
                 if (keywords[0].equals("PROMISE")) { // If promise was sent by acceptor
                     numberOfPromises++; // Update number of promises by 1
                 } else if ((!keywords[0].isEmpty())) { // If no promise was sent by acceptor, but only proposalID was sent
                     proposalIDs.add(Integer.parseInt(keywords[0]));
+                    proposedPresidentID = Integer.parseInt(keywords[1]); // Its possible the Acceptor sent back new President, so update
                 } else { // Promise wasn't received, and message is empty, so something went wrong
                     return false;
                 }
@@ -133,6 +136,11 @@ public class Proposer {
         try {
             output.writeObject("PROPOSE" + " " + chosenProposalID + " " + member.getID());
             output.flush();
+
+            // Get acceptor to receive it
+            a.receivePropose(this, )
+
+
         } catch (IOException e) {
             System.out.println("Failed to send propose: " + e.getMessage());
             return false;
