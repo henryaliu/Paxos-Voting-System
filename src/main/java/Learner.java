@@ -14,13 +14,6 @@ public class Learner {
     // Constructor: connects socket and streams
     public Learner(Integer learnerID) {
         this.ID = learnerID;
-        try {
-            learnerSocket = new Socket("learner" + String.valueOf(ID), 456 + ID); // Redirects socket to the member it needs to send to
-            output = new ObjectOutputStream(learnerSocket.getOutputStream());
-            input = new ObjectInputStream(learnerSocket.getInputStream());
-        } catch (IOException ie) {
-            System.out.println(ie.getMessage());
-        }
     }
 
     // Getters
