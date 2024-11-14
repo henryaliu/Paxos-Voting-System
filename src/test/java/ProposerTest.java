@@ -1,45 +1,28 @@
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.sql.Array;
-import java.util.ArrayList;
-import java.util.regex.PatternSyntaxException;
-
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.Random;
 
 class ProposerTest {
 
     @Test
-    // Unit test for sending Prepare message
-    // Testing that the socket co
-    void sendPrepare() {
-        Proposer p = new Proposer(1);
-        Member m1 = new Member(1, 1, 1, 1, "none");
-        Acceptor a1 = new Acceptor(1);
-        assertDoesNotThrow(() -> p.sendPrepare(m1, a1, ));
+    // Testing that we can connect to ServerSockets, connect to different SS, and reconnect later on
+    public void socketReconnectTest() {
+        try {
+            ServerSocket ss1 = new ServerSocket(4567);
+            ServerSocket ss2 = new ServerSocket(4568);
+            Socket s = new Socket();
+            s = new Socket("localhost", 4567);
+            s.close();
+            s = new Socket("localhost", 4568);
+        } catch (Exception e) {
+            System.out.println("OORAH" + e.getMessage());
+        }
     }
 
-    @Test
-    // To test out whether I can use split to determine if PROMISE was sent in the message by acceptor or not
-    void promiseOrNoPromiseTest() {
-        String withPromise = "PROMISE 3";
-        String withoutPromise = "3";
 
-        assertNotNull(withPromise.split(" ", 2));
-        assertNotNull(withoutPromise.split(" ", 2));
-    }
 
-    @Test
-    // Little test to check what I can do with ServerSocket
-    void isBoundTest() throws IOException {
-        ServerSocket ss = new ServerSocket(4567);
-        Socket s = new Socket("localhost", 4567);
-        Socket temp = ss.accept();
-    }
-
-    @Test
-    void sendPropose() {
-    }
 }
