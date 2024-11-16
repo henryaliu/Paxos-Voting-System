@@ -161,7 +161,7 @@ public class Proposer {
     public boolean sendAccept() {
         if (currentProposalID != 0) {
             for (int i = 1; i < participatingAcceptors.size() + 1; ++i) { // Sends Accept to agreeing Acceptors
-                connectAcceptor(participatingAcceptors.get(i - 1));
+                connectAcceptor(participatingAcceptors.get(i - 1)); // Connects this Proposer to the given Acceptor
                 this.send(participatingAcceptors.get(i - 1), "Accept " + currentProposalID + " " + nominee);
             }
             return true;
@@ -170,12 +170,15 @@ public class Proposer {
         }
     }
 
+    // Threaded (non-blocking) function: For receiving the response to Prepare sent by the Proposer
+    // index: Index to search for in the list of all acceptors
+    // Non-blocked to allow Paxos to proceed to the next Acceptor regardless of delays of the previous Acceptor
     public void getPrepareResponse(int index) {
         Thread prepareResponse = new Thread(() -> {
-            acceptorDirectory.get(index).respond(this); // Get the Acceptors to respond
+            acceptorDirectory.get(index).respond(this); // Get the Acceptor to respond
             response = receive(acceptorDirectory.get(index)); // Receive the Acceptor's response on Proposer end
 
-            checkPromise(index);
+            checkPromise(index); // Verify that this is a Promise
         });
         prepareResponse.start();
     }
@@ -183,38 +186,41 @@ public class Proposer {
     /*
         To cast the vote, and returns whether phase1 was successful
         Note: phase1 comprises of sending Prepare, waiting for Promise, and sending Accept successfully
+        numMembers: Number of total members
+        acceptorList: List of total acceptors
      */
     public boolean phase1(Integer numMembers, ArrayList<Acceptor> acceptorList) {
-        // Resets key data
+        // Resetting key data
         participatingAcceptors = new ArrayList<Acceptor>();
         this.acceptorDirectory = acceptorList;
         response = "";
         numPromises = new AtomicInteger(0);
 
-        for (int i = 1; i < acceptorDirectory.size() + 1; ++i) { // Sends to all Acceptors simultaneously
+        for (int i = 1; i < acceptorDirectory.size() + 1; ++i) { // Send Prepare to all Acceptors without
             connectAcceptor(acceptorDirectory.get(i - 1));
             this.send(acceptorDirectory.get(i - 1), "Prepare " + currentProposalID + " " + nominee);
 
             int index = i - 1;
-            getPrepareResponse(index);
+            getPrepareResponse(index); // Creates a thread in background to wait for each Acceptor's response
         }
 
         long startTime = System.currentTimeMillis();
-        while (true) { // Check for majority response first
-            if ((System.currentTimeMillis() - startTime) > 10000) {
+        while (true) { // Loop to allow all threads (Acceptor responses) to be received within 10s timeframe
+            if ((System.currentTimeMillis() - startTime) > 10000) { // For sake of liveness, we assume no response if delay > 10s
                 return false;
             }
-            if (numPromises.get() >= ((numMembers / 2) + 1)) {
+            if (numPromises.get() >= ((numMembers / 2) + 1)) { // Checks that majority sent Promise
                 return sendAccept();
             }
         }
     }
 
 
+    // Checks that Accepted is received in the response
     public void checkAccepted(int index, ArrayList<Learner> learnerList) {
         if (response.startsWith("Accepted")) {
-            numAccepted.incrementAndGet();
-            participatingAcceptors.add(acceptorDirectory.get(index));
+            numAccepted.incrementAndGet(); // Update atomic tracker
+            participatingAcceptors.add(acceptorDirectory.get(index)); // Add the acceptor and learner to lists
             participatingLearners.add(learnerList.get(index)); // Assumes equal number of Acceptors & Learners, added in same order
             String[] keywords = response.split(" ");
             if (currentProposalID < Integer.parseInt(keywords[1].trim())) { // Highest propID < curr propID
@@ -224,12 +230,14 @@ public class Proposer {
         }
     }
 
+
+    // Connects the Proposer to each Learner and informs them
     public boolean sendLearn() {
         if (currentProposalID != 0) {
             for (int i = 1; i < participatingLearners.size() + 1; ++i) { // Notify all the Learners
-                connectLearner(participatingLearners.get(i - 1));
+                connectLearner(participatingLearners.get(i - 1)); // Connect Proposer to the Learner
                 this.inform(participatingLearners.get(i - 1), this.currentProposalID, this.nominee); // Sends to Learner
-                participatingLearners.get(i - 1).receive();
+                participatingLearners.get(i - 1).receive(); // Receive the message on the Learner's end
             }
             return true;
         } else {
@@ -237,14 +245,16 @@ public class Proposer {
         }
     }
 
-    public void learnThread(int index, ArrayList<Learner> learnearList) {
-        Thread learnPhase = new Thread(() -> {
-            acceptorDirectory.get(index).respond(this);
-            response = this.receive(acceptorDirectory.get(index));
 
-            checkAccepted(index, learnearList);
+    // Non-blocked threaded function to check for Accepted response from Acceptor
+    public void checkAcceptResponse(int index, ArrayList<Learner> learnearList) {
+        Thread checkResponse = new Thread(() -> {
+            acceptorDirectory.get(index).respond(this); // Gets the right Acceptor to respond
+            response = this.receive(acceptorDirectory.get(index)); // Receives the response on Proposer end
+
+            checkAccepted(index, learnearList); // Check the response message for "Accepted"
         });
-        learnPhase.start();
+        checkResponse.start();
     }
 
     /*
@@ -258,13 +268,13 @@ public class Proposer {
         String response = "";
         numAccepted = new AtomicInteger(0);
 
-        for (int i = 1; i < acceptorDirectory.size() + 1; ++i) { // Collect the "Accepted" from Acceptor simultaneously
-            learnThread(i - 1, learnerList);
+        for (int i = 1; i < acceptorDirectory.size() + 1; ++i) { // Collects the "Accepted" from Acceptor simultaneously
+            checkAcceptResponse(i - 1, learnerList); // Thread call (runs in background) to avoid blocking
         }
 
         long startTime = System.currentTimeMillis();
-        while (true) {
-            if ((System.currentTimeMillis() - startTime) > 10000) {
+        while (true) { // Loop to allow all threads (Acceptor responses) to be received within 10s timeframe
+            if ((System.currentTimeMillis() - startTime) > 10000) { // If 10s and not enough responses, assume Member's never responded
                 return false;
             }
 

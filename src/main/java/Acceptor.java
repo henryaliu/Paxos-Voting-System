@@ -31,7 +31,7 @@ public class Acceptor {
         member: The member using this Acceptor
      */
     public Acceptor(Integer acceptorID, Member member) {
-        this.port = 5000 + acceptorID;
+        this.port = 5000 + acceptorID; // Port = 5000 + ID
         this.memberUsingThis = member;
         try {
             acceptorSocket = new ServerSocket(this.port);
@@ -40,6 +40,7 @@ public class Acceptor {
         }
     }
 
+    // Accepts incoming connections from sockets (Proposers)
     public void acceptConnection() {
         try {
             referenceSocket = acceptorSocket.accept();
@@ -50,6 +51,7 @@ public class Acceptor {
     }
 
     // Construct streams based off the established connection
+    // Assumes: a socket is connected to this Server Socket already
     public void constructStreams() {
         try {
             outputStream = new ObjectOutputStream(referenceSocket.getOutputStream());
@@ -72,23 +74,22 @@ public class Acceptor {
                 int receivedProposalID = Integer.parseInt(keywords[1].trim());
                 if (currentProposalID == null || receivedProposalID >= currentProposalID) { // If no previous proposal
                     currentProposalID = receivedProposalID;
-                } else { // received < current == reject
+                } else { // (received < current) == reject
                     response = "Reject " + currentProposalID + " " + keywords[2].trim();
-                    // return;
                 }
-                if (received.startsWith("Prepare")) { // If we received "Prepare"
+                if (received.startsWith("Prepare")) { // If we received "Prepare", respond with "Promise"
                     response = "Promise " + currentProposalID + " " + keywords[2].trim();
-                } else if (received.startsWith("Accept")) {
+                } else if (received.startsWith("Accept")) { // If we received "Accept", respond with "Accepted"
                     response = "Accepted " + currentProposalID + " " + keywords[2].trim();
                 } else {
                     return;
                 }
 
-                if (getMemberUsingThis().respondOrNot()) {
-                    long delay = getMemberUsingThis().decideResponseTime();
-                    Thread.sleep(delay);
+                if (getMemberUsingThis().respondOrNot()) { // Determines if the node responds at all
+                    long delay = getMemberUsingThis().decideResponseTime(); // If responded, determine the delay
+                    Thread.sleep(delay); // Simulate this delay for the Member acting as this Acceptor
                 } else {
-                    response = "Reject 0 0";
+                    response = "Reject 0 0"; // No response = send back Reject
                 }
 
                 outputStream.writeObject(response);

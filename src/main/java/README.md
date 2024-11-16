@@ -4,6 +4,7 @@
 3. Proposer: Check for majority (half + 1) Promise and then send "Accept", else end election
 4. Acceptor: responds "Accepted" if received id > current id
 5. Proposer: checks for majority (half + 1) "Accepted", and then informs each Learner representing each Member
+Note: For sake of liveness, a timeout limit of 10 seconds is used. If no response after 10 seconds, we assume no response from a node.
 
 # HOW TO RUN
 1. Ensure Java 1.2 or later is used (because of getFirst() feature for hashmaps)
@@ -39,3 +40,5 @@ but the randomness of which member gets to submit a proposal is still fully rand
 * Member 2 is more likely to nominate itself than the others, Members 1 and 2 may nominate someone exceptional rarely
 * Other members nominate a random member without bias if selected to submit a proposal.
 * Response times of each Member are implemented and simulated in Acceptor class when responding to Proposer class
+
+Unit/Integration tests are also provided for the three criteria

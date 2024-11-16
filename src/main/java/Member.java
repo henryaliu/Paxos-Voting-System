@@ -6,8 +6,8 @@ public class Member {
 
     private final Integer id; // Identification for the council member (ID = M(ID) (e.g. M1, ID = 1))
     private final Integer dominance; // Likelihood of the Member nominating themselves (1-3, 1 = most wants to be, 3 = neutral)
-    private final Integer responsiveness; // Response time (varies based on decideResponseTime()) (1-4, 1 = most responsive, 4=random)
-    private final boolean reliable; // true = always responds eventually, false = may occasionally not respond
+    private final Integer responsiveness; // Response time factor (varies based on decideResponseTime()) (1-4, 1 = most responsive, 4=random)
+    private final boolean reliable; // true = always responds eventually, false = occasionally fails to respond
 
     private Random rand;
     private Boolean disconnected = false;
