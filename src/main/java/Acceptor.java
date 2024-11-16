@@ -6,10 +6,13 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.AbstractMap;
 import java.util.LinkedHashMap;
+import java.util.concurrent.CompletableFuture;
 
 // Proposer class: implements the "Acceptor" messaging
 // Designed to suit 1 member per Acceptor
 public class Acceptor {
+
+    private String response = "";
 
     private ServerSocket acceptorSocket; // Server socket where the proposers send Proposals to
 
@@ -56,6 +59,7 @@ public class Acceptor {
         }
     }
 
+
     /*
         Checks for message and responds
         Assumes that a message has been sent to this Acceptor
@@ -64,8 +68,7 @@ public class Acceptor {
         try {
             String received = (String) inputStream.readObject();
             if (!received.isEmpty()) {
-                String[] keywords = received.split(" ");;
-                String response = "";
+                String[] keywords = received.split(" ");
                 int receivedProposalID = Integer.parseInt(keywords[1].trim());
                 if (currentProposalID == null || receivedProposalID >= currentProposalID) { // If no previous proposal
                     currentProposalID = receivedProposalID;
@@ -81,11 +84,11 @@ public class Acceptor {
                     return;
                 }
 
-                if (getMemberUsingThis().respondOrNot()) { // true = Member will respond
-                    Thread.sleep(getMemberUsingThis().decideResponseTime()); // Simulates the response time
+                if (getMemberUsingThis().respondOrNot()) {
+                    long delay = getMemberUsingThis().decideResponseTime();
+                    Thread.sleep(delay);
                 } else {
-                    Thread.sleep(2000);
-                    response = "Reject 0 0"; // Simulates timeout message
+                    response = "Reject 0 0";
                 }
 
                 outputStream.writeObject(response);

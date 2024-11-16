@@ -23,6 +23,10 @@ class ProposerTest {
         }
     }
 
-
+    @Test
+    public void majorityCalcTest() {
+        int numMembers = 9;
+        System.out.println((numMembers / 2) + 1);
+    }
 
 }

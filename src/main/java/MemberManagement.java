@@ -11,7 +11,6 @@ public class MemberManagement {
     ArrayList<Member> members = new ArrayList<Member>();
 
     // 3 Proposers, 9 Acceptors/Learners for availability + non-blocking + fault tolerance
-
     ArrayList<Proposer> proposers = new ArrayList<Proposer>(); // 3 proposers total
     ArrayList<Acceptor> acceptors = new ArrayList<Acceptor>(); // 1 per member
     ArrayList<Learner> learners = new ArrayList<Learner>(); // 1 per member
@@ -33,9 +32,9 @@ public class MemberManagement {
             acceptors.add(new Acceptor(i, members.get(i - 1)));
             learners.add(new Learner(i, members.get(i - 1)));
         }
-
         return;
     }
+
 
     /*
         For testing the case where all 9 members respond instantly
@@ -53,7 +52,7 @@ public class MemberManagement {
                 members.add(new Member(i, 3, 1, true)); // Neutral nominee pick, random responsiveness, always responds
             }
 
-            for (int i = 1; i < 10; ++i) {
+            for (int i = 1; i < 10; ++i) { // Adds acceptors and learners for each Member into list
                 acceptors.add(new Acceptor(i, members.get(i - 1)));
                 learners.add(new Learner(i, members.get(i - 1)));
             }
@@ -64,7 +63,7 @@ public class MemberManagement {
 
 
     /*
-        Coordinates the election process
+        Coordinates the entire election process
      */
     public void elect() {
         Random random = new Random();
@@ -76,34 +75,56 @@ public class MemberManagement {
             numProposals = 1;
         }
 
-        for (int i = 0; i < numProposals; ++i) { // Generates the proposer/(s)
+        for (int i = 0; i < numProposals; ++i) { // Generates the proposer/(s) for given number of proposals
             random = new Random();
-            Integer chosenMember = random.nextInt(9) + 1;
+            Integer chosenMember = random.nextInt(9) + 1; // Randomly selects a member to submit a proposal
             proposalIDCounter++;
             proposers.add(new Proposer(members.get(chosenMember - 1), members.get(chosenMember - 1).nominateWho(9), proposalIDCounter, acceptors));
         }
         Integer finished = 0;
-        for (int i = 1; i < proposers.size() + 1; ++i) { // Do the election for both
-            if (proposers.get(i - 1).phase1(9, acceptors)) { // stops here???
-                if (proposers.get(i - 1).phase2(proposers.get(i - 1).getParticipatingAcceptors().size(), learners)) {
+        System.out.println("\n*** " + proposers.size() + " proposal(s) for the next President have been submitted! ***");
+        System.out.println("\n*** ELECTION IS NOW TAKING PLACE USING PAXOS ***\n");
+        for (int i = 1; i < proposers.size() + 1; ++i) { // Does the election for the proposal(s)
+            if (proposers.get(i - 1).phase1(9, acceptors)) { // Phase 1: Prepare, Promise
+                if (proposers.get(i - 1).phase2(proposers.get(i - 1).getParticipatingAcceptors().size(), learners)) { // Phase 2
                     finished++;
                 }
+            } else {
+                System.out.println("Not enougb members voted or responded. Election aborted.");
+                return;
             }
         }
-        if (finished > 0) {
-            System.out.println("Election(s) finished.");
+        if (finished.equals(numProposals)) { // Number of proposals processed is equal to number of proposals
+            System.out.println("Election(s) finished. One proposal has the majority!");
         } else {
-            System.out.println("Election(s) failed");
+            System.out.println("Election(s) failed. No consensus was achieved.");
+            return;
         }
 
         System.out.println("The results are: ");
-        String[] keywords = learners.get(0).getMemberUsingThis().getInsight().split(" ");
-        System.out.println("Winning Proposal ID: " + keywords[1] + ", Winning Nominee: Member " + keywords[2]);
+
+        String[] keywords = null;
+        for (int i = 0; i < learners.size(); ++i) { // Prints out what the Learner received (each Learner receives the same value per election)
+            if (learners.get(i) != null && (learners.get(i).getMemberUsingThis() != null)) {
+                if (learners.get(i).getMemberUsingThis().getInsight() != null && (!learners.get(i).getMemberUsingThis().getInsight().isEmpty())) {
+                    keywords = learners.get(i).getMemberUsingThis().getInsight().split(" ");
+                    break;
+                }
+            }
+        }
+
+        System.out.println("* Number of Members who responded: " + proposers.getFirst().getParticipatingAcceptors().size());
+        System.out.println("* Winning Proposal ID: " + keywords[1]);
+        System.out.println("* Winning Nominee: Member " + keywords[2]);
         return;
     }
 
+    /*
+        Main running code
+     */
     public static void main(String[] args) {
         MemberManagement m = new MemberManagement(); // Create the list of the council members
         m.elect();
+        return;
     }
 }
